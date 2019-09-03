@@ -289,7 +289,6 @@ end
 
 comps = RiCal.parse_string(IO.read(opts[:ical_file]).to_s)
 
-seen = []
 # handle events
 comps.each do |cal|
     cal.events.each do |event|
