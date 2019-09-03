@@ -27,11 +27,10 @@
 # along with this software. If not, see
 # http://creativecommons.org/publicdomain/zero/1.0/
 
-require 'rubygems'
-gem 'ri_cal'
-gem 'tzinfo'
 require 'erb'
 require 'ri_cal'
+require 'tzinfo'
+require 'optimist'
 
 # e.g. output will be suppressed if default is specified
 DEFAULT_TZ = 'Europe/Berlin'
