@@ -22,7 +22,7 @@
 # copyright and related and neighboring rights to this software to the
 # public domain worldwide. This software is distributed without any
 # warranty.
-# 
+#
 # You should have received a copy of the CC0 Public Domain Dedication
 # along with this software. If not, see
 # http://creativecommons.org/publicdomain/zero/1.0/
@@ -44,14 +44,15 @@ end
 DEFAULT_TZ = 'Europe/Berlin'
 
 # see the RiCal docs if Timezones don't work out for you
-::RiCal::PropertyValue::DateTime::default_tzid = DEFAULT_TZ # :floating
+::RiCal::PropertyValue::DateTime.default_tzid = DEFAULT_TZ # :floating
 
-# timespan for filtering (which should really be done by your server/app) and recurrences limitation
-FILTER_SPAN = [Date.today - 90, Date.today + 400]
+# timespan for filtering (which should really be done by your
+# server/app) and recurrences limitation
+FILTER_SPAN = [Date.today - 90, Date.today + 400].freeze
 
 # org-mode ignores weekdays, but it should match for convenience
 # WEEKDAYS = %w{So Mo Di Mi Do Fr Sa} # german weekdays
-WEEKDAYS = %w{Su Mo Tu We Th Fr Sa} # english weekdays
+WEEKDAYS = %w[Su Mo Tu We Th Fr Sa].freeze # english weekdays
 
 # org date (ISO 8601)
 def orgDate(t)
@@ -96,7 +97,7 @@ end
 # single-day ical time span?
 def simpleTimeSpan?(tstart, tend)
   return true if tend.nil?
-  tend = fixupEndTime(tend)  
+  tend = fixupEndTime(tend)
   # test date equality
   if (tstart.day == tend.day &&
       tstart.month == tend.month &&
@@ -114,7 +115,7 @@ def orgTimeSpan(tstart, tend, repeaterClause = nil)
   else
     # long notation
     res = orgDateTime(tstart, repeaterClause)
-    
+
     tend = fixupEndTime(tend)
     # use of repeater in spanning date seems impossible in org-mode
     # alterntively, this case could be unfolded
@@ -255,7 +256,7 @@ EOT
 
 # org keywords for ical completion states (see the RFC)
 OrgKeywordForCompleted = {
-  "COMPLETED" => "DONE",  
+  "COMPLETED" => "DONE",
   "CANCELLED" => "CANCELLED",
   "IN-PROCESS" => "TODO",  # in case you have a STARTED state, this is a nice place for it
   "NEEDS-ACTION" => "TODO",
@@ -264,9 +265,9 @@ OrgKeywordForCompleted = {
 
 # evaluate various things available to the template
 def evaluateTodo(todo)
-  { 
+  {
     :orgKeyword => OrgKeywordForCompleted[todo.completed],
-    :orgPrio => (!todo.priority.nil? && todo.priority > 1) ? "#C " : " " 
+    :orgPrio => (!todo.priority.nil? && todo.priority > 1) ? "#C " : " "
   }
 end
 
