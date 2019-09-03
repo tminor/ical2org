@@ -32,6 +32,14 @@ require 'ri_cal'
 require 'tzinfo'
 require 'optimist'
 
+
+opts = Optimist.options do
+    opt :ical_file,
+        'Instance to check',
+        type:     String,
+        required: true
+end
+
 # e.g. output will be suppressed if default is specified
 DEFAULT_TZ = 'Europe/Berlin'
 
