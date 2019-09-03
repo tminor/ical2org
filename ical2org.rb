@@ -55,39 +55,39 @@ FILTER_SPAN = [Date.today - 90, Date.today + 400].freeze
 WEEKDAYS = %w[Su Mo Tu We Th Fr Sa].freeze # english weekdays
 
 # org date (ISO 8601)
-def orgDate(t)
+def org_date(t)
   "%04d-%02d-%02d %s" % [t.year, t.month, t.day, (WEEKDAYS[t.wday]) ]
 end
 
 # org time (ISO 8601)
-def orgTime(ti)
+def org_time(ti)
   "%02d:%02d" % [ti.hour, ti.min]
 end
 
-def hasHour?(dt)
+def hour?(dt)
   dt.respond_to?(:hour)
 end
 
 # org date and time string
-def orgDateTime(dt, repeaterClause = nil)
-  res = "<" + orgDate(dt)
-  res += " " + orgTime(dt) if (hasHour?(dt))
+def org_date_time(dt, repeaterClause = nil)
+  res = "<" + org_date(dt)
+  res += " " + org_time(dt) if (hour?(dt))
   res += " " + repeaterClause if (!repeaterClause.nil?)
   res + ">"
 end
 
 # date and time span (on the same date)
-def orgTimeSpanShort(st, et, repeaterClause = nil)
-  res = "<" + orgDate(st)
-  res += " " + orgTime(st) if (hasHour?(st))
-  res += "-" + orgTime(et) if (hasHour?(et))
+def org_time_span_short(st, et, repeaterClause = nil)
+  res = "<" + org_date(st)
+  res += " " + org_time(st) if (hour?(st))
+  res += "-" + org_time(et) if (hour?(et))
   res += " " + repeaterClause if (!repeaterClause.nil?)
   res + ">"
 end
 
 # subtract one day if end is a new day's beginning
-def fixupEndTime(tend)
-  if (!hasHour?(tend) || (tend.hour == 0 && tend.minute==0)) then
+def fixup_end_time(tend)
+  if (!hour?(tend) || (tend.hour == 0 && tend.minute==0)) then
     tend - 1
   else
     tend
@@ -95,9 +95,9 @@ def fixupEndTime(tend)
 end
 
 # single-day ical time span?
-def simpleTimeSpan?(tstart, tend)
+def simple_time_span?(tstart, tend)
   return true if tend.nil?
-  tend = fixupEndTime(tend)
+  tend = fixup_end_time(tend)
   # test date equality
   if (tstart.day == tend.day &&
       tstart.month == tend.month &&
@@ -108,39 +108,39 @@ def simpleTimeSpan?(tstart, tend)
 end
 
 # time span, possibly several days
-def orgTimeSpan(tstart, tend, repeaterClause = nil)
+def org_time_span(tstart, tend, repeaterClause = nil)
   # start and end on same date -> use short notation
-  if (simpleTimeSpan?(tstart, tend)) then
-    orgTimeSpanShort(tstart, tend, repeaterClause)
+  if (simple_time_span?(tstart, tend)) then
+    org_time_span_short(tstart, tend, repeaterClause)
   else
     # long notation
-    res = orgDateTime(tstart, repeaterClause)
+    res = org_date_time(tstart, repeaterClause)
 
-    tend = fixupEndTime(tend)
+    tend = fixup_end_time(tend)
     # use of repeater in spanning date seems impossible in org-mode
     # alterntively, this case could be unfolded
     if (repeaterClause.nil?) then
-      res += "--" + orgDateTime(tend) if !tend.nil?
+      res += "--" + org_date_time(tend) if !tend.nil?
     else
-      warn "omission of end time to allow repeater: " + orgDateTime(tstart, repeaterClause) + "--" + orgDateTime(tend)
+      warn "omission of end time to allow repeater: " + org_date_time(tstart, repeaterClause) + "--" + org_date_time(tend)
     end
     res
   end
 end
 
 # time span and a human-readable hint to the origin TZ
-def orgTimeSpanTZ(tstart, tend, repeaterClause = nil)
-  res = orgTimeSpan(tstart, tend, repeaterClause)
+def org_time_span_tz(tstart, tend, repeaterClause = nil)
+  res = org_time_span(tstart, tend, repeaterClause)
   res += " [" + tstart.tzid + "]" if(tstart.respond_to?(:tzid) && tstart.tzid != DEFAULT_TZ)
   res
 end
 
-def dateInRange(date)
+def date_in_range(date)
   return date >= FILTER_SPAN[0] && date <= FILTER_SPAN[1]
 end
 
 # can the rule be expressed as a org-mode repeater?
-def isOrgCompatRepeater?(ical)
+def org_compat_repeater?(ical)
   # no exrule
   return false if !ical.exrule_property.empty?
   # one rrule
@@ -153,13 +153,14 @@ def isOrgCompatRepeater?(ical)
 end
 
 # org repeater clause for an ical entry which is believed to be org-mode compatible
-def orgRepeaterClause(ical)
+def org_repeater_clause(ical)
   rr = ical.rrule_property[0]
   "+%d%s" % [ rr.interval, rr.freq[0..0].downcase ]
 end
 
+# TODO: Use Logger instead.
 # put errors to stderr
-def putError(err, ical)
+def put_error(err, ical)
   warn err
   warn err.backtrace
   warn "------ (ical) --------"
@@ -175,7 +176,7 @@ OrgEventTemplate = ERB.new <<-'EOT', nil, "%<>"
   :icalCategories: <%= ev.categories.join(" ") %>
   :END:
 % if (!ev.recurs?)
-  <%= orgTimeSpanTZ(ev.dtstart, ev.dtend) %>
+  <%= org_time_span_tz(ev.dtstart, ev.dtend) %>
 % end
 % if (!ev.location.nil?)
   Location: <%= ev.location %>
@@ -188,10 +189,10 @@ OrgEventTemplate = ERB.new <<-'EOT', nil, "%<>"
   <%= ev.url %>
 % end
 % if (ev.recurs?) then
-%   if (isOrgCompatRepeater?(ev))
-  Recurs: <%= orgTimeSpan(ev.dtstart, ev.dtend, orgRepeaterClause(ev)) %>
+%   if (org_compat_repeater?(ev))
+  Recurs: <%= org_time_span(ev.dtstart, ev.dtend, org_repeater_clause(ev)) %>
 %   else
-  Occurrences: <% ev.occurrences(:overlapping => FILTER_SPAN).each { |occ| %><%= orgTimeSpan(occ.dtstart, occ.dtend) %> <% } %>
+  Occurrences: <% ev.occurrences(:overlapping => FILTER_SPAN).each { |occ| %><%= org_time_span(occ.dtstart, occ.dtend) %> <% } %>
 %   end
 % end
   <%# uncomment if you have an edit link: = "[[edit:%s][edit %s]]" % [ev.uid, ev.summary]  %>
@@ -212,7 +213,7 @@ def orgEventSection(ev)
   result = evaluateEvent(ev)
   OrgEventTemplate.result(binding)
 rescue StandardError => e
-  putError(e, ev)
+  put_error(e, ev)
 end
 
 # filter events (e.g. by date)
@@ -224,15 +225,15 @@ def includeEvent?(ev)
     warn ev
     return false
   end
-  return true if (!ev.dtend.nil? && dateInRange(ev.dtend))
-  return true if (dateInRange(ev.dtstart))
+  return true if (!ev.dtend.nil? && date_in_range(ev.dtend))
+  return true if (date_in_range(ev.dtstart))
   false
 end
 
 OrgTodoTemplate = ERB.new <<-'EOT', nil, "%<>"
 <%#-*- coding: UTF-8 -*-%>
 * <%= results[:orgKeyword] %><%= results[:orgPrio] %><%= todo.summary %>
-  <% if (!todo.due.nil?) then %>DEADLINE: <%= orgDateTime(todo.finish_time) %><% end %><% if (!todo.dtstart.nil?) then %> SCHEDULED: <%= orgDateTime(todo.dtstart) %><% end %>
+  <% if (!todo.due.nil?) then %>DEADLINE: <%= org_date_time(todo.finish_time) %><% end %><% if (!todo.dtstart.nil?) then %> SCHEDULED: <%= org_date_time(todo.dtstart) %><% end %>
   :PROPERTIES:
   :ID: <%= todo.uid %>
   :icalCategories: <%= todo.categories.join(" ") %>
@@ -276,14 +277,14 @@ def orgTodoSection(todo)
   results = evaluateTodo(todo)
   OrgTodoTemplate.result(binding)
 rescue StandardError => e
-  putError(e, todo)
+  put_error(e, todo)
 end
 
 # decide wheter to include/evaluate the VTODO
 def includeTodo?(todo)
   return true if (todo.status != "COMPLETED" && todo.status != "CANCELLED")
   # if open, see if we care
-  return dateInRange(todo.completed)
+  return date_in_range(todo.completed)
 end
 
 comps = RiCal.parse_string(IO.read(opts[:ical_file]).to_s)
