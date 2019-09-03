@@ -286,13 +286,21 @@ def includeTodo?(todo)
   return dateInRange(todo.completed)
 end
 
-comps = RiCal.parse(STDIN)
+comps = RiCal.parse_string(IO.read(opts[:ical_file]).to_s)
 
+seen = []
 # handle events
 comps.each do |cal|
-  cal.events.each do |event|
-    puts orgEventSection(event) if includeEvent?(event)
-  end
+    cal.events.each do |event|
+        dupes = cal.events.select {|e| e.uid =~ /#{event.uid}/ }
+
+        if includeEvent?(event) && !(dupes.count - 1).positive?
+            puts orgEventSection(event)
+            next
+        end
+
+        puts orgEventSection(event) if includeEvent?(event) && !event.recurs?.nil?
+    end
 end
 
 # handle TODOs
